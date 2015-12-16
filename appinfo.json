@@ -1,0 +1,16 @@
+{
+  "uuid": "f7eb73a9-0314-4cc0-842b-56b7c8559f25",
+  "shortName": "Static Enigma",
+  "longName": "Static Enigma",
+  "companyName": "Travis La Marr",
+  "versionLabel": "1.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["aplite", "basalt"],
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {},
+  "resources": {
+    "media": []
+  }
+}
