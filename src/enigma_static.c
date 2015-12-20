@@ -13,6 +13,11 @@ static GSize textSize;
 
 #define FONT_PADDING 6
 #define NUMBER_GAP 10
+#ifdef PBL_ROUND
+#define PADDING 17
+#else
+#define PADDING 0
+#endif
 
 static int getRandNumber() {
     return rand() % 9;
@@ -28,6 +33,18 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & YEAR_UNIT) {
     layer_mark_dirty(year_layer);
   }
+}
+
+static void draw_round_numbers(GContext *ctx, GRect bounds, int height) {
+  char tmp[2];
+  snprintf(tmp, 2, "%d", getRandNumber());
+  graphics_draw_text(ctx, tmp, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
+        GRect(-textSize.w/2, height, textSize.w, bounds.size.h),
+        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  snprintf(tmp, 2, "%d", getRandNumber());
+  graphics_draw_text(ctx, tmp, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
+        GRect(bounds.size.w-textSize.w/2, height, textSize.w, bounds.size.h),
+        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
 static void update_time(Layer *layer, GContext *ctx) {
@@ -48,10 +65,14 @@ static void update_time(Layer *layer, GContext *ctx) {
     s_buffer[i][0] = s_buffer[0][n];
     s_buffer[i][1] = '\n';
     graphics_draw_text(ctx, s_buffer[i], fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
-    			GRect((NUMBER_GAP * n) + (textSize.w * n) + FONT_PADDING, -7, textSize.w, bounds.size.h),
+    			GRect((NUMBER_GAP * n) + (textSize.w * n) + FONT_PADDING + PADDING, -7, textSize.w, bounds.size.h),
     			GTextOverflowModeFill, GTextAlignmentCenter, NULL);
     n++;
   }
+
+  #ifdef PBL_ROUND
+  draw_round_numbers(ctx, bounds, -7);
+  #endif
 }
 
 static void update_date(Layer *layer, GContext *ctx) {
@@ -69,10 +90,14 @@ static void update_date(Layer *layer, GContext *ctx) {
     s_buffer[i][0] = s_buffer[0][n];
     s_buffer[i][1] = '\n';
     graphics_draw_text(ctx, s_buffer[i], fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
-    			GRect((NUMBER_GAP * n) + (textSize.w * n) + FONT_PADDING, 0, textSize.w, bounds.size.h),
+    			GRect((NUMBER_GAP * n) + (textSize.w * n) + FONT_PADDING + PADDING, 0, textSize.w, bounds.size.h),
     			GTextOverflowModeFill, GTextAlignmentCenter, NULL);
     n++;
   }
+
+  #ifdef PBL_ROUND
+  draw_round_numbers(ctx, bounds, 0);
+  #endif
 }
 
 static void update_year(Layer *layer, GContext *ctx) {
@@ -89,10 +114,15 @@ static void update_year(Layer *layer, GContext *ctx) {
     s_buffer[i][0] = s_buffer[0][n];
     s_buffer[i][1] = '\n';
     graphics_draw_text(ctx, s_buffer[i], fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
-    			GRect((NUMBER_GAP * n) + (textSize.w * n) + FONT_PADDING, 0, textSize.w, bounds.size.h),
+    			GRect((NUMBER_GAP * n) + (textSize.w * n) + FONT_PADDING  + PADDING, 0, textSize.w, bounds.size.h),
     			GTextOverflowModeFill, GTextAlignmentCenter, NULL);
     n++;
   }
+
+  #ifdef PBL_ROUND
+  draw_round_numbers(ctx, bounds, 0);
+  #endif
+
 }
 
 static void generate_random(Layer *layer, GContext *ctx) {
@@ -103,7 +133,7 @@ static void generate_random(Layer *layer, GContext *ctx) {
   for (size_t i = 0; i < 4; i++) {
     snprintf(tmp, 2, "%d", getRandNumber());
     graphics_draw_text(ctx, tmp, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
-    			GRect((NUMBER_GAP * i) + (textSize.w * i) + FONT_PADDING, 0, textSize.w, bounds.size.h),
+    			GRect((NUMBER_GAP * i) + (textSize.w * i) + FONT_PADDING + PADDING, 0, textSize.w, bounds.size.h),
     			GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
 }
@@ -111,7 +141,7 @@ static void generate_random(Layer *layer, GContext *ctx) {
 static void window_load(Window *window) {
   textSize = graphics_text_layout_get_content_size("0",
                 fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
-                GRect(0, 0, 100, 42), GTextOverflowModeFill,
+                GRect(0, 0, 50, 42), GTextOverflowModeFill,
                 GTextAlignmentCenter);
 
   Layer *window_layer = window_get_root_layer(window);
@@ -119,24 +149,23 @@ static void window_load(Window *window) {
   window_set_background_color(window, GColorBlack);
 
   //draw random numbers
-  //these are static for the life of the run. Because fuck it. who cares.
-  top_random = layer_create(GRect(0, -32, bounds.size.w, textSize.h));
+  top_random = layer_create(GRect(0, PBL_IF_RECT_ELSE(-32, -26), bounds.size.w, textSize.h));
   layer_add_child(window_layer, top_random);
   layer_set_update_proc(top_random, generate_random);
 
-  bottom_random = layer_create(GRect(0, 144, bounds.size.w, textSize.h));
+  bottom_random = layer_create(GRect(0, PBL_IF_RECT_ELSE(144, 150), bounds.size.w, textSize.h));
   layer_add_child(window_layer, bottom_random);
   layer_set_update_proc(bottom_random, generate_random);
 
-  year_layer = layer_create(GRect(0, 12, bounds.size.w, textSize.h));
+  year_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(12, 18), bounds.size.w, textSize.h));
   layer_add_child(window_layer, year_layer);
   layer_set_update_proc(year_layer, update_year);
 
-  time_layer = layer_create(GRect(0, 63, bounds.size.w, textSize.h));
+  time_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(63, 69), bounds.size.w, textSize.h));
   layer_add_child(window_layer,time_layer);
   layer_set_update_proc(time_layer, update_time);
 
-  date_layer = layer_create(GRect(0, 100, bounds.size.w, textSize.h));
+  date_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(100, 106), bounds.size.w, textSize.h));
   layer_add_child(window_layer, date_layer);
   layer_set_update_proc(date_layer, update_date);
 }
