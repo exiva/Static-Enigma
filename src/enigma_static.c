@@ -11,6 +11,14 @@ static Layer *bottom_random;
 
 static GSize textSize;
 
+enum {
+  bg = 0,
+  fg = 1
+};
+
+static int32_t fg_color;
+static int32_t bg_color;
+
 #define FONT_PADDING 6
 #define NUMBER_GAP 10
 #ifdef PBL_ROUND
@@ -35,6 +43,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   }
 }
 
+#ifdef PBL_ROUND
 static void draw_round_numbers(GContext *ctx, GRect bounds, int height) {
   char tmp[2];
   snprintf(tmp, 2, "%d", getRandNumber());
@@ -46,13 +55,14 @@ static void draw_round_numbers(GContext *ctx, GRect bounds, int height) {
         GRect(bounds.size.w-textSize.w/2, height, textSize.w, bounds.size.h),
         GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
+#endif
 
 static void update_time(Layer *layer, GContext *ctx) {
   // APP_LOG(APP_LOG_LEVEL_INFO, "Drawing Time Layer.");
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_text_color(ctx, GColorWhite);
-  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorOrange, GColorLightGray));
+  graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(fg_color), GColorWhite));
+  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(bg_color), GColorLightGray));
   graphics_fill_rect(ctx, GRect(0, 0, bounds.size.w, bounds.size.h-1),0,GCornerNone);
 
   time_t temp = time(NULL);
@@ -178,16 +188,37 @@ static void window_unload(Window *window) {
   layer_destroy(date_layer);
 }
 
+static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+  if (!dict_find(iter, bg)) return;
+  bg_color = dict_find(iter, bg)->value->int32;
+  fg_color = dict_find(iter, fg)->value->int32;
+  persist_write_int(bg, bg_color);
+  persist_write_int(fg, fg_color);
+  layer_mark_dirty(time_layer);
+}
+
 static void init(void) {
   window = window_create();
+  if (persist_exists(bg)) {
+    bg_color = persist_read_int(bg);
+    fg_color = persist_read_int(fg);
+  } else {
+    bg_color = 16755200;
+    fg_color = 16777215;
+  }
+
   window_set_window_handlers(window, (WindowHandlers) {
     .load = window_load,
     .unload = window_unload,
   });
+
   srand(time(NULL)); //seed random number generator
   //subscribe to multiple tick events to update layers accordingly.
   tick_timer_service_subscribe(MINUTE_UNIT | DAY_UNIT | YEAR_UNIT, tick_handler);
   window_stack_push(window, false);
+
+  app_message_register_inbox_received(inbox_received_handler);
+  app_message_open(10, 0);
 }
 
 static void deinit(void) {

@@ -3,13 +3,17 @@
   "shortName": "Static Enigma",
   "longName": "Static Enigma",
   "companyName": "Travis La Marr",
-  "versionLabel": "1.0",
+  "versionLabel": "1.1",
   "sdkVersion": "3",
   "targetPlatforms": ["aplite", "basalt", "chalk"],
   "watchapp": {
     "watchface": true
   },
-  "appKeys": {},
+  "capabilities": ["configurable"],
+  "appKeys": {
+    "bg": 0,
+    "fg": 1
+  },
   "resources": {
     "media": []
   }
