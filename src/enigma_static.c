@@ -10,6 +10,7 @@ static Layer *top_random;
 static Layer *bottom_random;
 
 static GSize textSize;
+static bool is_obstructed;
 
 enum {
   bg = 0,
@@ -152,6 +153,40 @@ static void generate_random(Layer *layer, GContext *ctx) {
   }
 }
 
+static void obstructed_will_change(GRect final_unobstructed_screen_area, void *context) {
+  GRect year_frame = layer_get_frame(year_layer);
+  GRect time_frame = layer_get_frame(time_layer);
+  GRect date_frame = layer_get_frame(date_layer);
+  GRect full_bounds = layer_get_bounds(window_get_root_layer(window));
+
+  if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
+    // Screen is about to become obstructed, hide the date
+    layer_set_hidden(top_random, true);
+    layer_set_hidden(bottom_random, true);
+
+    year_frame.origin.y = -10;
+    layer_set_frame(year_layer, year_frame);
+
+    time_frame.origin.y = textSize.h-3;
+    layer_set_frame(time_layer, time_frame);
+
+    date_frame.origin.y = textSize.h*2-10;
+    layer_set_frame(date_layer, date_frame);
+  } else {
+    year_frame.origin.y = 12;
+    layer_set_frame(year_layer, year_frame);
+
+    time_frame.origin.y = 63;
+    layer_set_frame(time_layer, time_frame);
+
+    date_frame.origin.y = 100;
+    layer_set_frame(date_layer, date_frame);
+
+    layer_set_hidden(top_random, false);
+    layer_set_hidden(bottom_random, false);
+  }
+}
+
 static void window_load(Window *window) {
   textSize = graphics_text_layout_get_content_size("0",
                 fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS),
@@ -162,6 +197,15 @@ static void window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
   window_set_background_color(window, GColorBlack);
 
+  GRect unobstructed_bounds = layer_get_unobstructed_bounds(window_layer);
+  is_obstructed = !grect_equal(&bounds, &unobstructed_bounds);
+
+  UnobstructedAreaHandlers unobstructed_handlers = {
+    .will_change = obstructed_will_change,
+  };
+
+  unobstructed_area_service_subscribe(unobstructed_handlers, NULL);
+
   //draw random numbers
   top_random = layer_create(GRect(0, PBL_IF_RECT_ELSE(-32, -26), bounds.size.w, textSize.h));
   layer_add_child(window_layer, top_random);
@@ -171,17 +215,22 @@ static void window_load(Window *window) {
   layer_add_child(window_layer, bottom_random);
   layer_set_update_proc(bottom_random, generate_random);
 
-  year_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(12, 18), bounds.size.w, textSize.h));
+  year_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(is_obstructed ? -10 : 12, 18), bounds.size.w, textSize.h));
   layer_add_child(window_layer, year_layer);
   layer_set_update_proc(year_layer, update_year);
 
-  time_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(63, 69), bounds.size.w, textSize.h));
+  time_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(is_obstructed ? textSize.h-3 : 63, 69), bounds.size.w, textSize.h));
   layer_add_child(window_layer,time_layer);
   layer_set_update_proc(time_layer, update_time);
 
-  date_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(100, 106), bounds.size.w, textSize.h));
+  date_layer = layer_create(GRect(0, PBL_IF_RECT_ELSE(is_obstructed ? textSize.h*2-10 : 100, 106), bounds.size.w, textSize.h));
   layer_add_child(window_layer, date_layer);
   layer_set_update_proc(date_layer, update_date);
+
+  if (is_obstructed) {
+    layer_set_hidden(top_random, true);
+    layer_set_hidden(bottom_random, true);
+  }
 }
 
 static void window_unload(Window *window) {
