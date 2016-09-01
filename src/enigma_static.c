@@ -16,8 +16,12 @@ enum {
   fg = 1
 };
 
-static int32_t fg_color;
-static int32_t bg_color;
+typedef struct {
+  int32_t fg_color;
+  int32_t bg_color;
+} colorSettings;
+
+colorSettings *settings;
 
 #define FONT_PADDING 6
 #define NUMBER_GAP 10
@@ -61,8 +65,8 @@ static void update_time(Layer *layer, GContext *ctx) {
   // APP_LOG(APP_LOG_LEVEL_INFO, "Drawing Time Layer.");
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(fg_color), GColorWhite));
-  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(bg_color), GColorLightGray));
+  graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(settings->fg_color), GColorWhite));
+  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(settings->bg_color), GColorLightGray));
   graphics_fill_rect(ctx, GRect(0, 0, bounds.size.w, bounds.size.h-1),0,GCornerNone);
 
   time_t temp = time(NULL);
@@ -190,21 +194,23 @@ static void window_unload(Window *window) {
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (!dict_find(iter, bg)) return;
-  bg_color = dict_find(iter, bg)->value->int32;
-  fg_color = dict_find(iter, fg)->value->int32;
-  persist_write_int(bg, bg_color);
-  persist_write_int(fg, fg_color);
+  settings->bg_color = dict_find(iter, bg)->value->int32;
+  settings->fg_color = dict_find(iter, fg)->value->int32;
+  persist_write_int(bg, settings->bg_color);
+  persist_write_int(fg, settings->fg_color);
   layer_mark_dirty(time_layer);
 }
 
 static void init(void) {
   window = window_create();
+  settings = calloc(1, sizeof(colorSettings));
+
   if (persist_exists(bg)) {
-    bg_color = persist_read_int(bg);
-    fg_color = persist_read_int(fg);
+    settings->bg_color = persist_read_int(bg);
+    settings->fg_color = persist_read_int(fg);
   } else {
-    bg_color = 16755200;
-    fg_color = 16777215;
+    settings->bg_color = 16755200;
+    settings->fg_color = 16777215;
   }
 
   window_set_window_handlers(window, (WindowHandlers) {
@@ -223,6 +229,7 @@ static void init(void) {
 
 static void deinit(void) {
   tick_timer_service_unsubscribe();
+  free(settings);
   window_destroy(window);
 }
 
