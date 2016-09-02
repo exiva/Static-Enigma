@@ -1,0 +1,36 @@
+{
+    "author": "Travis La Marr",
+    "dependencies": {
+        "pebble-clay": "^1.0.2"
+    },
+    "keywords": [],
+    "name": "static-enigma",
+    "pebble": {
+        "capabilities": [
+            "configurable"
+        ],
+        "displayName": "Static Enigma",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "bg",
+            "fg",
+            "config"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": []
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite"
+        ],
+        "uuid": "f7eb73a9-0314-4cc0-842b-56b7c8559f25",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "1.1.0"
+}
