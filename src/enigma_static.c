@@ -273,7 +273,7 @@ static void init(void) {
   window_stack_push(window, false);
 
   app_message_register_inbox_received(inbox_received_handler);
-  app_message_open(10, 0);
+  app_message_open(128, 0);
 }
 
 static void deinit(void) {
