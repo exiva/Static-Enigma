@@ -151,15 +151,15 @@ static void obstructed_will_change(GRect final_unobstructed_screen_area, void *c
   GRect time_frame = layer_get_frame(app->time_layer);
   GRect date_frame = layer_get_frame(app->date_layer);
   GRect full_bounds = layer_get_bounds(window_get_root_layer(app->window));
-  
+
   if (!grect_equal(&full_bounds, &final_unobstructed_screen_area)) {
     // Screen is about to become obstructed, hide the date
     layer_set_hidden(app->top_random, true);
     layer_set_hidden(app->bottom_random, true);
-    
+
     year_frame.origin.y = -10;
     layer_set_frame(app->year_layer, year_frame);
-    
+
     time_frame.origin.y = app->textSize.h-3;
     layer_set_frame(app->time_layer, time_frame);
 
@@ -168,13 +168,13 @@ static void obstructed_will_change(GRect final_unobstructed_screen_area, void *c
   } else {
     year_frame.origin.y = 12;
     layer_set_frame(app->year_layer, year_frame);
-    
+
     time_frame.origin.y = 63;
     layer_set_frame(app->time_layer, time_frame);
 
     date_frame.origin.y = 100;
     layer_set_frame(app->date_layer, date_frame);
-    
+
     layer_set_hidden(app->top_random, false);
     layer_set_hidden(app->bottom_random, false);
   }
@@ -192,13 +192,13 @@ static void window_load(Window *window) {
   
   GRect unobstructed_bounds = layer_get_unobstructed_bounds(window_layer);
   app->is_obstructed = !grect_equal(&bounds, &unobstructed_bounds);
-  
+
   UnobstructedAreaHandlers unobstructed_handlers = {
     .will_change = obstructed_will_change,
   };
 
   unobstructed_area_service_subscribe(unobstructed_handlers, NULL);
-  
+
   //draw random numbers
   app->top_random = layer_create(GRect(0, PBL_IF_RECT_ELSE(-32, -26), bounds.size.w, app->textSize.h));
   layer_add_child(window_layer, app->top_random);
