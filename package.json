@@ -12,8 +12,11 @@
         "displayName": "Static Enigma",
         "enableMultiJS": true,
         "messageKeys": [
-            "bg",
-            "fg",
+            "t_bg",
+            "t_fg",
+            "m_bg",
+            "m_fg",
+            "r_fg",
             "config"
         ],
         "projectType": "native",

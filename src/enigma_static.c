@@ -1,8 +1,11 @@
 #include <pebble.h>
 
 typedef struct __attribute__((__packed__)) {
-  int32_t fg_color;
-  int32_t bg_color;
+  int32_t t_fg_color;
+  int32_t t_bg_color;
+  int32_t m_fg_color;
+  int32_t m_bg_color;
+  int32_t r_fg_color;
 } settings;
 
 struct app {
@@ -59,8 +62,8 @@ static void update_time(Layer *layer, GContext *ctx) {
   // APP_LOG(APP_LOG_LEVEL_INFO, "Drawing Time Layer.");
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(app->config.fg_color), GColorWhite));
-  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorFromHEX(app->config.bg_color), GColorLightGray));
+  graphics_context_set_text_color(ctx, GColorFromHEX(app->config.t_fg_color));
+  graphics_context_set_fill_color(ctx, GColorFromHEX(app->config.t_bg_color));
   graphics_fill_rect(ctx, GRect(0, 0, bounds.size.w, bounds.size.h-1),0,GCornerNone);
 
   time_t temp = time(NULL);
@@ -86,7 +89,7 @@ static void update_time(Layer *layer, GContext *ctx) {
 static void update_date(Layer *layer, GContext *ctx) {
   // APP_LOG(APP_LOG_LEVEL_INFO, "Drawing Date Layer.");
   GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_context_set_text_color(ctx, GColorFromHEX(app->config.m_fg_color));
 
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
@@ -111,7 +114,7 @@ static void update_date(Layer *layer, GContext *ctx) {
 static void update_year(Layer *layer, GContext *ctx) {
   // APP_LOG(APP_LOG_LEVEL_INFO, "Drawing Year Layer.");
   GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_context_set_text_color(ctx, GColorFromHEX(app->config.m_fg_color));
 
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
@@ -136,7 +139,9 @@ static void update_year(Layer *layer, GContext *ctx) {
 static void generate_random(Layer *layer, GContext *ctx) {
   // APP_LOG(APP_LOG_LEVEL_INFO, "Drawing Random Number Layers.");
   GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(GColorDarkGray, GColorWhite));
+  graphics_context_set_text_color(ctx, PBL_IF_COLOR_ELSE(
+    GColorFromHEX(app->config.r_fg_color),
+    GColorFromHEX(app->config.m_fg_color)));
   char tmp[2];
   for (size_t i = 0; i < 4; i++) {
     snprintf(tmp, 2, "%d", getRandNumber());
@@ -188,8 +193,8 @@ static void window_load(Window *window) {
 
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-  window_set_background_color(window, GColorBlack);
-  
+  window_set_background_color(window, GColorFromHEX(app->config.m_bg_color));
+
   GRect unobstructed_bounds = layer_get_unobstructed_bounds(window_layer);
   app->is_obstructed = !grect_equal(&bounds, &unobstructed_bounds);
 
@@ -235,9 +240,15 @@ static void window_unload(Window *window) {
 }
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
-  if (!dict_find(iter, MESSAGE_KEY_bg)) return;
-  app->config.bg_color = dict_find(iter, MESSAGE_KEY_bg)->value->int32;
-  app->config.fg_color = dict_find(iter, MESSAGE_KEY_fg)->value->int32;
+  if (!dict_find(iter, MESSAGE_KEY_t_bg)) return;
+  app->config.t_bg_color = dict_find(iter, MESSAGE_KEY_t_bg)->value->int32;
+  app->config.t_fg_color = dict_find(iter, MESSAGE_KEY_t_fg)->value->int32;
+  app->config.m_bg_color = dict_find(iter, MESSAGE_KEY_m_bg)->value->int32;
+  app->config.m_fg_color = dict_find(iter, MESSAGE_KEY_m_fg)->value->int32;
+  #ifdef PBL_COLOR
+  app->config.r_fg_color = dict_find(iter, MESSAGE_KEY_r_fg)->value->int32;
+  #endif
+  window_set_background_color(app->window, GColorFromHEX(app->config.m_bg_color));
   layer_mark_dirty(app->time_layer);
 }
 
@@ -245,8 +256,11 @@ static void init(void) {
   app = calloc(1, sizeof(*app));
 
   app->window = window_create();
-  app->config.fg_color = 16777215;
-  app->config.bg_color = 16755200;
+  app->config.t_fg_color = 16777215;
+  app->config.t_bg_color = 16733695;
+  app->config.m_bg_color = 0;
+  app->config.m_fg_color = 16777215;
+  app->config.r_fg_color = 5592405;
 
   if (persist_exists(MESSAGE_KEY_config)) {
     persist_read_data(MESSAGE_KEY_config, &app->config, sizeof(app->config));
