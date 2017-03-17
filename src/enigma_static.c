@@ -6,6 +6,7 @@ typedef struct __attribute__((__packed__)) {
   int32_t m_fg_color;
   int32_t m_bg_color;
   int32_t r_fg_color;
+  bool    beats;
 } settings;
 
 struct app {
@@ -116,10 +117,18 @@ static void update_year(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   graphics_context_set_text_color(ctx, GColorFromHEX(app->config.m_fg_color));
 
-  time_t temp = time(NULL);
-  struct tm *tick_time = localtime(&temp);
   static char s_buffer[5][5];
-  strftime(s_buffer[0], sizeof(s_buffer[0]), "%Y", tick_time);
+  if (app->config.beats) {
+    time_t bmt_epoch = time(NULL)+3600; // UTC+1
+    struct tm *bmt = gmtime(&bmt_epoch);
+    uint16_t beat = (bmt->tm_sec + (bmt->tm_min * 60) + (bmt->tm_hour * 3600)) * 10 / 864;
+    snprintf(s_buffer[0], sizeof(s_buffer[0]), "%04d", beat);
+  } else {
+    time_t temp = time(NULL);
+    struct tm *tick_time = localtime(&temp);
+    strftime(s_buffer[0], sizeof(s_buffer[0]), "%Y", tick_time);
+  }
+
   int n = 0;
   for (size_t i = 1; i < 5; i++) {
     s_buffer[i][0] = s_buffer[0][n];
@@ -245,6 +254,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   app->config.t_fg_color = dict_find(iter, MESSAGE_KEY_t_fg)->value->int32;
   app->config.m_bg_color = dict_find(iter, MESSAGE_KEY_m_bg)->value->int32;
   app->config.m_fg_color = dict_find(iter, MESSAGE_KEY_m_fg)->value->int32;
+  app->config.beats = dict_find(iter, MESSAGE_KEY_beats);
   #ifdef PBL_COLOR
   app->config.r_fg_color = dict_find(iter, MESSAGE_KEY_r_fg)->value->int32;
   #endif
@@ -261,6 +271,7 @@ static void init(void) {
   app->config.m_bg_color = 0;
   app->config.m_fg_color = 16777215;
   app->config.r_fg_color = 5592405;
+  app->config.beats      = false;
 
   if (persist_exists(MESSAGE_KEY_config)) {
     persist_read_data(MESSAGE_KEY_config, &app->config, sizeof(app->config));

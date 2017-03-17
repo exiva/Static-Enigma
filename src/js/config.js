@@ -65,6 +65,20 @@ module.exports = [
     ]
   },
   {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": ".beats"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "beats",
+        "label": "Replace year with .beats"
+      }
+    ]
+  },
+  {
     "type": "submit",
     "defaultValue": "save"
   }
